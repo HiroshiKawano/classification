@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouTube動画コンテンツ診断ツール</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
         .htmx-indicator {
@@ -20,103 +21,77 @@
 </head>
 <body class="bg-gray-50">
     <div class="min-h-screen" x-data="diagnosisApp()">
-        <!-- Header -->
-        <header class="bg-white shadow-sm border-b">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h1 class="text-2xl font-bold text-gray-900">YouTube動画コンテンツ診断</h1>
-                        <p class="text-sm text-gray-600 mt-1">企業様のYouTubeチャンネルを分析し、動画を自動分類します</p>
-                    </div>
-                    <button 
-                        @click="showAdminPanel = true"
-                        class="px-4 py-2 bg-gray-800 text-white rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors flex items-center gap-2"
-                    >
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                        </svg>
-                        管理画面
-                    </button>
-                </div>
-            </div>
-        </header>
-
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <!-- 診断入力フォーム（常に表示） -->
-            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-                <h2 class="text-xl font-semibold mb-6">診断を開始する</h2>
-                
-                <form @submit.prevent="analyzechannel" class="space-y-6">
-                    <!-- URL入力 -->
-                    <div>
-                        <label for="channelUrl" class="block text-sm font-medium text-gray-700 mb-2">
-                            YouTubeチャンネルまたは動画URL
-                        </label>
-                        <input 
-                            type="url" 
-                            id="channelUrl"
-                            x-model="formData.url"
-                            required
-                            placeholder="https://www.youtube.com/@channelname または https://www.youtube.com/watch?v=..."
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        >
-                        <p class="mt-2 text-sm text-gray-500">
-                            ※ チャンネルURL、動画URL、チャンネルIDのいずれかを入力してください
-                        </p>
-                    </div>
-
-                    <!-- 検索対象 -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-3">
-                            検索対象
-                        </label>
-                        
-                        <div class="flex gap-6">
-                            <label class="flex items-center space-x-2 cursor-pointer">
-                                <input 
-                                    type="radio" 
-                                    name="searchType" 
-                                    value="channel"
-                                    x-model="formData.searchType"
-                                    class="w-4 h-4 text-blue-600"
-                                >
-                                <span class="text-sm text-gray-700">チャンネル全体</span>
-                            </label>
-
-                            <label class="flex items-center space-x-2 cursor-pointer">
-                                <input 
-                                    type="radio" 
-                                    name="searchType" 
-                                    value="video"
-                                    x-model="formData.searchType"
-                                    class="w-4 h-4 text-blue-600"
-                                >
-                                <span class="text-sm text-gray-700">特定の動画</span>
-                            </label>
-                        </div>
-                        
-                        <p class="mt-2 text-xs text-gray-500">
-                            ※ チャンネル全体を選択した場合、公開されている全動画を分析します
-                        </p>
-                    </div>
-
-                    <!-- 診断ボタン -->
-                    <button 
-                        type="submit"
-                        :disabled="loading"
-                        class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            <!-- 診断入力フォーム（アコーディオン） -->
+            <div class="bg-white rounded-lg shadow-md mb-8">
+                <!-- アコーディオンヘッダー（診断後に表示） -->
+                <div 
+                    x-show="results.length > 0"
+                    @click="showInputForm = !showInputForm"
+                    class="flex items-center justify-between px-6 py-4 cursor-pointer hover:bg-gray-50 transition-colors border-b"
+                >
+                    <h3 class="text-lg font-medium text-gray-900">診断フォーム</h3>
+                    <svg 
+                        class="w-5 h-5 text-gray-500 transition-transform duration-200"
+                        :class="{'rotate-180': showInputForm}"
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
                     >
-                        <span x-show="!loading">診断を開始する</span>
-                        <span x-show="loading" class="flex items-center justify-center">
-                            <svg class="animate-spin h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </div>
+
+                <!-- フォームコンテンツ -->
+                <div 
+                    x-show="results.length === 0 || showInputForm"
+                    x-collapse
+                    class="p-6"
+                >
+                    <!-- 管理画面ボタン -->
+                    <div class="flex justify-end mb-4">
+                        <button 
+                            @click="showAdminPanel = true"
+                            class="px-4 py-2 bg-gray-800 text-white rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors flex items-center gap-2"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                             </svg>
-                            分析中...
-                        </span>
-                    </button>
-                </form>
+                            管理画面
+                        </button>
+                    </div>
+
+                    <form @submit.prevent="analyzechannel" class="space-y-6">
+                        <!-- URL入力 -->
+                        <div>
+                            <input 
+                                type="url" 
+                                id="channelUrl"
+                                x-model="formData.url"
+                                required
+                                placeholder="https://www.youtube.com/@channelname または https://www.youtube.com/watch?v=..."
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                        </div>
+
+                        <!-- 診断ボタン -->
+                        <button 
+                            type="submit"
+                            :disabled="loading"
+                            class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                        >
+                            <span x-show="!loading">YouTubeチャンネル診断を開始する</span>
+                            <span x-show="loading" class="flex items-center justify-center">
+                                <svg class="animate-spin h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                分析中...
+                            </span>
+                        </button>
+                    </form>
+                </div>
             </div>
 
             <!-- ローディング表示 -->
@@ -132,44 +107,18 @@
             </div>
 
             <!-- 診断結果 -->
-            <div x-show="results.length > 0 && !selectedCategory" x-cloak>
-                <!-- 結果サマリー -->
-                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <div>
-                            <h2 class="text-xl font-semibold text-gray-900">診断結果</h2>
-                            <p class="text-sm text-gray-600 mt-1">
-                                チャンネル名: <span class="font-medium" x-text="channelInfo.name"></span>
-                            </p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-sm text-gray-600">総動画数: <span class="font-bold text-lg" x-text="channelInfo.totalVideos"></span>本</p>
-                            <p class="text-sm text-gray-600">分類済み: <span class="font-bold text-lg text-green-600" x-text="channelInfo.classifiedVideos"></span>本</p>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-end pt-4 border-t">
-                        <button 
-                            @click="exportCSV"
-                            class="px-6 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors"
-                        >
-                            📥 CSV出力
-                        </button>
-                    </div>
-                </div>
-
-                <!-- 分類マトリクス -->
+            <div x-show="results.length > 0" x-cloak>
+                <!-- リッチ版マトリクス -->
                 <div class="bg-white rounded-lg shadow-md overflow-hidden">
                     <div class="p-6">
-                        <h3 class="text-lg font-semibold mb-4">分類マトリクス (3×6 = 18カテゴリ)</h3>
-                        <p class="text-sm text-gray-600 mb-6">各マスをクリックすると該当動画の一覧が表示されます</p>
+                        <h3 class="text-lg font-semibold mb-6">動画コンテンツファネルレポート</h3>
                         
                         <!-- マトリクステーブル -->
                         <div class="overflow-x-auto">
                             <table class="min-w-full border-collapse">
                                 <thead>
                                     <tr class="bg-gradient-to-r from-blue-50 to-blue-100">
-                                        <th class="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-900 w-48">
+                                        <th class="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-900 w-32">
                                             縦軸 \ 横軸
                                         </th>
                                         <th class="border border-gray-300 px-4 py-3 text-center text-sm font-semibold text-gray-900">
@@ -198,17 +147,46 @@
                                             <th class="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-900 bg-gray-50" x-text="vertical"></th>
                                             <template x-for="(horizontal, hIndex) in ['認知', '興味関心', '比較検討', '購入', '継続購入', 'ファン化']" :key="hIndex">
                                                 <td 
-                                                    class="border border-gray-300 px-4 py-6 text-center cursor-pointer hover:bg-blue-50 transition-colors"
-                                                    :class="getMatrixCellClass(vertical, horizontal)"
-                                                    @click="openCategoryDetail(vertical, horizontal)"
+                                                    class="border border-gray-300 p-3 relative"
+                                                    :class="getMatrixCount(vertical, horizontal) > 0 ? 'bg-white' : 'bg-gray-50'"
                                                 >
-                                                    <span 
-                                                        class="text-2xl font-bold"
-                                                        :class="getMatrixCount(vertical, horizontal) > 0 ? 'text-blue-600' : 'text-gray-400'"
-                                                        x-text="getMatrixCount(vertical, horizontal) > 0 ? getMatrixCount(vertical, horizontal) : '-'"
-                                                    ></span>
-                                                    <div class="text-xs text-gray-500 mt-1" x-show="getMatrixCount(vertical, horizontal) > 0">
-                                                        本
+                                                    <!-- 動画カウントバッジ -->
+                                                    <div 
+                                                        x-show="getMatrixCount(vertical, horizontal) > 0"
+                                                        class="absolute top-2 right-2 z-10 bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg"
+                                                        x-text="getMatrixCount(vertical, horizontal)"
+                                                    ></div>
+                                                    
+                                                    <!-- 動画がない場合 -->
+                                                    <div 
+                                                        x-show="getMatrixCount(vertical, horizontal) === 0"
+                                                        class="flex items-center justify-center h-32"
+                                                    >
+                                                        <span class="text-4xl font-bold text-gray-300">-</span>
+                                                    </div>
+                                                    
+                                                    <!-- サムネイルグリッド（最大4つ） -->
+                                                    <div 
+                                                        x-show="getMatrixCount(vertical, horizontal) > 0"
+                                                        class="grid grid-cols-2 gap-1"
+                                                    >
+                                                        <template x-for="i in 4" :key="i">
+                                                            <div class="relative aspect-video bg-gray-200 rounded overflow-hidden">
+                                                                <template x-if="getMatrixVideos(vertical, horizontal)[i-1]">
+                                                                    <div class="relative w-full h-full group">
+                                                                        <img 
+                                                                            :src="getMatrixVideos(vertical, horizontal)[i-1].thumbnail"
+                                                                            :alt="getMatrixVideos(vertical, horizontal)[i-1].title"
+                                                                            class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                                                                        >
+                                                                        <!-- 再生時間オーバーレイ -->
+                                                                        <div class="absolute bottom-1 right-1 bg-black bg-opacity-80 text-white text-[10px] px-1 py-0.5 rounded">
+                                                                            <span x-text="getMatrixVideos(vertical, horizontal)[i-1].duration"></span>
+                                                                        </div>
+                                                                    </div>
+                                                                </template>
+                                                            </div>
+                                                        </template>
                                                     </div>
                                                 </td>
                                             </template>
@@ -217,89 +195,6 @@
                                 </tbody>
                             </table>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- カテゴリ詳細表示 -->
-            <div x-show="selectedCategory" x-cloak>
-                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <button 
-                                @click="selectedCategory = null"
-                                class="text-blue-600 hover:text-blue-800 text-sm font-medium mb-2 flex items-center gap-1"
-                            >
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                                </svg>
-                                マトリクスに戻る
-                            </button>
-                            <h2 class="text-xl font-semibold text-gray-900">
-                                <span x-text="selectedCategory?.vertical"></span> × <span x-text="selectedCategory?.horizontal"></span>
-                            </h2>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-sm text-gray-600">
-                                該当動画: <span class="font-bold text-lg text-blue-600" x-text="selectedCategory?.videos.length || 0"></span>本
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 動画一覧 -->
-                <div class="bg-white rounded-lg shadow-md overflow-hidden">
-                    <div class="divide-y divide-gray-200">
-                        <template x-for="video in selectedCategory?.videos || []" :key="video.id">
-                            <div class="p-6 hover:bg-gray-50 transition-colors">
-                                <div class="flex gap-4">
-                                    <!-- サムネイル -->
-                                    <div class="flex-shrink-0">
-                                        <div class="w-40 h-24 bg-gray-200 rounded overflow-hidden relative">
-                                            <img 
-                                                :src="video.thumbnail" 
-                                                :alt="video.title"
-                                                class="w-full h-full object-cover"
-                                            >
-                                        </div>
-                                    </div>
-
-                                    <!-- 動画情報 -->
-                                    <div class="flex-1 min-w-0">
-                                        <h4 class="text-base font-semibold text-gray-900 mb-2 line-clamp-2" x-text="video.title"></h4>
-                                        
-                                        <div class="flex flex-wrap gap-4 text-sm text-gray-600 mb-3">
-                                            <span class="flex items-center">
-                                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
-                                                    <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>
-                                                </svg>
-                                                <span x-text="formatNumber(video.views)"></span>回
-                                            </span>
-                                            <span class="flex items-center">
-                                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
-                                                </svg>
-                                                <span x-text="video.publishedAt"></span>
-                                            </span>
-                                        </div>
-
-                                        <a 
-                                            :href="video.url" 
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 font-medium hover:underline"
-                                        >
-                                            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"/>
-                                                <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z"/>
-                                            </svg>
-                                            YouTubeで視聴する
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </template>
                     </div>
                 </div>
             </div>
@@ -461,28 +356,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Footer -->
-        <footer class="bg-white border-t mt-12">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div class="flex items-center gap-3">
-                        <svg class="w-6 h-6 text-red-600" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                        </svg>
-                        <span class="text-sm text-gray-600">Powered by YouTube Data API</span>
-                    </div>
-                    <div class="text-sm text-gray-500">
-                        <a href="https://www.youtube.com/t/terms" target="_blank" class="hover:text-gray-700 underline">YouTube利用規約</a>
-                        <span class="mx-2">|</span>
-                        <a href="https://policies.google.com/privacy" target="_blank" class="hover:text-gray-700 underline">プライバシーポリシー</a>
-                    </div>
-                </div>
-                <p class="text-xs text-gray-500 text-center mt-4">
-                    このツールはYouTube Data APIを使用しています。動画の視聴はYouTube上で行われます。
-                </p>
-            </div>
-        </footer>
     </div>
 
     <script>
@@ -497,7 +370,7 @@
                 // 状態管理
                 loading: false,
                 showAdminPanel: false,
-                selectedCategory: null,
+                showInputForm: false,
                 
                 // チャンネル情報
                 channelInfo: {
@@ -541,7 +414,6 @@
                 analyzechannel() {
                     this.loading = true;
                     this.results = [];
-                    this.selectedCategory = null;
                     
                     // 実際の実装ではAPIを呼び出し
                     setTimeout(() => {
@@ -554,10 +426,11 @@
                         this.results = this.generateDummyData();
                         this.buildMatrix();
                         this.loading = false;
+                        this.showInputForm = false;
                         
                         // 結果にスクロール
                         setTimeout(() => {
-                            const resultsSection = document.querySelector('[x-show="results.length > 0 && !selectedCategory"]');
+                            const resultsSection = document.querySelector('[x-show="results.length > 0"]');
                             if (resultsSection) {
                                 resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                             }
@@ -608,19 +481,10 @@
                     return '';
                 },
                 
-                // カテゴリ詳細を開く
-                openCategoryDetail(vertical, horizontal) {
+                // マトリクスの動画リストを取得（最大4つ）
+                getMatrixVideos(vertical, horizontal) {
                     const key = `${vertical}|${horizontal}`;
-                    const cellData = this.matrix[key];
-                    
-                    if (cellData && cellData.videos.length > 0) {
-                        this.selectedCategory = cellData;
-                        
-                        // 詳細表示にスクロール
-                        setTimeout(() => {
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }, 100);
-                    }
+                    return this.matrix[key]?.videos.slice(0, 4) || [];
                 },
                 
                 // ダミーデータ生成
@@ -636,7 +500,8 @@
                                     thumbnail: 'https://via.placeholder.com/320x180/3B82F6/FFFFFF?text=CM+Video',
                                     views: 125000,
                                     publishedAt: '2024/03/15',
-                                    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+                                    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                                    duration: '0:30'
                                 },
                                 {
                                     id: 2,
@@ -644,7 +509,8 @@
                                     thumbnail: 'https://via.placeholder.com/320x180/3B82F6/FFFFFF?text=Brand+Video',
                                     views: 89000,
                                     publishedAt: '2024/02/01',
-                                    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+                                    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                                    duration: '1:45'
                                 },
                                 {
                                     id: 3,
@@ -652,7 +518,17 @@
                                     thumbnail: 'https://via.placeholder.com/320x180/3B82F6/FFFFFF?text=TV+CM',
                                     views: 234000,
                                     publishedAt: '2024/01/10',
-                                    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+                                    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                                    duration: '0:30'
+                                },
+                                {
+                                    id: 13,
+                                    title: '企業紹介動画 ロングバージョン',
+                                    thumbnail: 'https://via.placeholder.com/320x180/3B82F6/FFFFFF?text=Corporate',
+                                    views: 45000,
+                                    publishedAt: '2023/12/20',
+                                    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                                    duration: '3:20'
                                 }
                             ]
                         },
@@ -666,7 +542,8 @@
                                     thumbnail: 'https://via.placeholder.com/320x180/10B981/FFFFFF?text=How+To',
                                     views: 45000,
                                     publishedAt: '2024/04/20',
-                                    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+                                    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                                    duration: '8:32'
                                 },
                                 {
                                     id: 5,
@@ -674,7 +551,8 @@
                                     thumbnail: 'https://via.placeholder.com/320x180/10B981/FFFFFF?text=Trend',
                                     views: 67000,
                                     publishedAt: '2024/03/05',
-                                    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+                                    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                                    duration: '12:15'
                                 }
                             ]
                         },
@@ -688,7 +566,8 @@
                                     thumbnail: 'https://via.placeholder.com/320x180/10B981/FFFFFF?text=Case+Study',
                                     views: 34000,
                                     publishedAt: '2024/05/10',
-                                    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+                                    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                                    duration: '5:42'
                                 },
                                 {
                                     id: 7,
@@ -696,7 +575,8 @@
                                     thumbnail: 'https://via.placeholder.com/320x180/10B981/FFFFFF?text=Testimonial',
                                     views: 28000,
                                     publishedAt: '2024/04/15',
-                                    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+                                    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                                    duration: '4:18'
                                 },
                                 {
                                     id: 8,
@@ -704,7 +584,8 @@
                                     thumbnail: 'https://via.placeholder.com/320x180/10B981/FFFFFF?text=Comparison',
                                     views: 52000,
                                     publishedAt: '2024/03/25',
-                                    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+                                    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                                    duration: '9:55'
                                 }
                             ]
                         },
@@ -718,7 +599,8 @@
                                     thumbnail: 'https://via.placeholder.com/320x180/F59E0B/FFFFFF?text=Behind+Scene',
                                     views: 15000,
                                     publishedAt: '2024/05/20',
-                                    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+                                    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                                    duration: '6:28'
                                 },
                                 {
                                     id: 10,
@@ -726,7 +608,8 @@
                                     thumbnail: 'https://via.placeholder.com/320x180/F59E0B/FFFFFF?text=Team',
                                     views: 12000,
                                     publishedAt: '2024/05/05',
-                                    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+                                    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                                    duration: '7:12'
                                 }
                             ]
                         },
@@ -740,7 +623,8 @@
                                     thumbnail: 'https://via.placeholder.com/320x180/8B5CF6/FFFFFF?text=Campaign',
                                     views: 78000,
                                     publishedAt: '2024/02/28',
-                                    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+                                    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                                    duration: '2:15'
                                 }
                             ]
                         },
@@ -754,7 +638,8 @@
                                     thumbnail: 'https://via.placeholder.com/320x180/EF4444/FFFFFF?text=Trial',
                                     views: 23000,
                                     publishedAt: '2024/04/01',
-                                    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+                                    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                                    duration: '3:45'
                                 }
                             ]
                         }
