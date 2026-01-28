@@ -70,40 +70,81 @@
                                 id="channelUrl"
                                 x-model="formData.url"
                                 required
-                                placeholder="https://www.youtube.com/@channelname または https://www.youtube.com/watch?v=..."
+                                placeholder="YouTubeチャンネルURL(ホーム)orチャンネルID(@...)を入力し、[クイック診断]・[ディープサーチ]ボタンを押してください"
                                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             >
                         </div>
 
-                        <!-- 診断ボタン -->
-                        <button 
-                            type="submit"
-                            :disabled="loading"
-                            class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-                        >
-                            <span x-show="!loading">YouTubeチャンネル診断を開始する</span>
-                            <span x-show="loading" class="flex items-center justify-center">
-                                <svg class="animate-spin h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                分析中...
-                            </span>
-                        </button>
+                        <!-- 診断ボタン（2つ） -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <!-- クイック診断ボタン -->
+                            <button
+                                type="submit"
+                                :disabled="loading"
+                                class="bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                            >
+                                <span x-show="!loading">クイック診断(50本の動画を診断)</span>
+                                <span x-show="loading" class="flex items-center justify-center">
+                                    <svg class="animate-spin h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    分析中...
+                                </span>
+                            </button>
+
+                            <!-- ディープサーチボタン -->
+                            <button
+                                type="button"
+                                @click="analyzechannel()"
+                                :disabled="loading"
+                                class="bg-purple-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                            >
+                                <span x-show="!loading">ディープサーチ(300本の動画を診断)</span>
+                                <span x-show="loading" class="flex items-center justify-center">
+                                    <svg class="animate-spin h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    分析中...
+                                </span>
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
 
-            <!-- ローディング表示 -->
-            <div x-show="loading" class="bg-white rounded-lg shadow-md p-12 text-center mb-8">
-                <div class="flex justify-center mb-4">
-                    <svg class="animate-spin h-12 w-12 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+            <!-- プログレスバー表示 -->
+            <div x-show="loading" class="bg-white rounded-lg shadow-md p-8 mb-8">
+                <div class="max-w-2xl mx-auto">
+                    <!-- プログレスメッセージ -->
+                    <div class="text-center mb-6">
+                        <div class="flex justify-center mb-4">
+                            <svg class="animate-spin h-12 w-12 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </div>
+                        <p class="text-lg font-medium text-gray-900 mb-2" x-text="progressMessage"></p>
+                        <p class="text-sm text-gray-500">少々お待ちください</p>
+                    </div>
+
+                    <!-- プログレスバー -->
+                    <div class="relative">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-700">処理進捗</span>
+                            <span class="text-sm font-semibold text-blue-600" x-text="progress + '%'"></span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                            <div
+                                class="bg-gradient-to-r from-blue-500 to-blue-600 h-4 rounded-full transition-all duration-500 ease-out flex items-center justify-end"
+                                :style="`width: ${progress}%`"
+                            >
+                                <div class="w-full h-full bg-blue-600 animate-pulse opacity-20"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <p class="text-lg text-gray-700 mb-2">動画を分析しています...</p>
-                <p class="text-sm text-gray-500">少々お待ちください</p>
             </div>
 
             <!-- 診断結果 -->
@@ -174,15 +215,11 @@
                                                             <div class="relative aspect-video bg-gray-200 rounded overflow-hidden">
                                                                 <template x-if="getMatrixVideos(vertical, horizontal)[i-1]">
                                                                     <div class="relative w-full h-full group">
-                                                                        <img 
+                                                                        <img
                                                                             :src="getMatrixVideos(vertical, horizontal)[i-1].thumbnail"
                                                                             :alt="getMatrixVideos(vertical, horizontal)[i-1].title"
                                                                             class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                                                                         >
-                                                                        <!-- 再生時間オーバーレイ -->
-                                                                        <div class="absolute bottom-1 right-1 bg-black bg-opacity-80 text-white text-[10px] px-1 py-0.5 rounded">
-                                                                            <span x-text="getMatrixVideos(vertical, horizontal)[i-1].duration"></span>
-                                                                        </div>
                                                                     </div>
                                                                 </template>
                                                             </div>
@@ -199,6 +236,47 @@
                 </div>
             </div>
         </main>
+
+        <!-- フッター -->
+        <footer class="bg-white border-t border-gray-200 mt-8">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                <div class="flex flex-col items-center space-y-3">
+                    <!-- YouTube API 表示 -->
+                    <div class="flex items-center gap-2">
+                        <svg class="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                        </svg>
+                        <span class="text-sm font-medium text-gray-700">Powered by YouTube Data API</span>
+                    </div>
+                    
+                    <!-- 説明文 -->
+                    <p class="text-xs text-gray-500 text-center">
+                        このツールはYouTube Data APIを使用しています。動画の視聴はYouTube上で行われます。
+                    </p>
+                    
+                    <!-- リンク -->
+                    <div class="flex items-center gap-4 text-xs">
+                        <a 
+                            href="https://www.youtube.com/t/terms" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            class="text-blue-600 hover:text-blue-800 underline"
+                        >
+                            YouTube利用規約
+                        </a>
+                        <span class="text-gray-300">|</span>
+                        <a 
+                            href="https://policies.google.com/privacy" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            class="text-blue-600 hover:text-blue-800 underline"
+                        >
+                            プライバシーポリシー
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </footer>
 
         <!-- 管理画面モーダル -->
         <div 
@@ -369,6 +447,8 @@
                 
                 // 状態管理
                 loading: false,
+                progress: 0,
+                progressMessage: '',
                 showAdminPanel: false,
                 showInputForm: false,
                 
@@ -413,29 +493,69 @@
                 // 診断実行
                 analyzechannel() {
                     this.loading = true;
+                    this.progress = 0;
                     this.results = [];
-                    
-                    // 実際の実装ではAPIを呼び出し
-                    setTimeout(() => {
-                        this.channelInfo = {
-                            name: 'サンプル株式会社',
-                            totalVideos: 85,
-                            classifiedVideos: 67
-                        };
-                        
-                        this.results = this.generateDummyData();
-                        this.buildMatrix();
-                        this.loading = false;
-                        this.showInputForm = false;
-                        
-                        // 結果にスクロール
-                        setTimeout(() => {
-                            const resultsSection = document.querySelector('[x-show="results.length > 0"]');
-                            if (resultsSection) {
-                                resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                            }
-                        }, 100);
-                    }, 2000);
+                    this.progressMessage = 'YouTubeチャンネル情報を取得中...';
+
+                    // プログレス更新シミュレーション
+                    const updateProgress = (targetProgress, message, duration) => {
+                        return new Promise(resolve => {
+                            this.progressMessage = message;
+                            const startProgress = this.progress;
+                            const progressDiff = targetProgress - startProgress;
+                            const steps = 20;
+                            const stepDuration = duration / steps;
+                            let currentStep = 0;
+
+                            const interval = setInterval(() => {
+                                currentStep++;
+                                this.progress = Math.min(
+                                    startProgress + (progressDiff * currentStep / steps),
+                                    targetProgress
+                                );
+
+                                if (currentStep >= steps) {
+                                    clearInterval(interval);
+                                    resolve();
+                                }
+                            }, stepDuration);
+                        });
+                    };
+
+                    // 段階的に処理を実行
+                    updateProgress(20, 'YouTubeチャンネル情報を取得中...', 500)
+                        .then(() => updateProgress(40, '動画リストを取得中...', 800))
+                        .then(() => updateProgress(60, '動画を分析中...', 1000))
+                        .then(() => updateProgress(80, 'カテゴリ分類を実行中...', 700))
+                        .then(() => updateProgress(95, '結果を生成中...', 400))
+                        .then(() => {
+                            // データ生成
+                            this.channelInfo = {
+                                name: 'サンプル株式会社',
+                                totalVideos: 85,
+                                classifiedVideos: 67
+                            };
+
+                            this.results = this.generateDummyData();
+                            this.buildMatrix();
+
+                            return updateProgress(100, '完了しました！', 200);
+                        })
+                        .then(() => {
+                            setTimeout(() => {
+                                this.loading = false;
+                                this.showInputForm = false;
+                                this.progress = 0;
+
+                                // 結果にスクロール
+                                setTimeout(() => {
+                                    const resultsSection = document.querySelector('[x-show="results.length > 0"]');
+                                    if (resultsSection) {
+                                        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                    }
+                                }, 100);
+                            }, 500);
+                        });
                 },
                 
                 // マトリクス構築
